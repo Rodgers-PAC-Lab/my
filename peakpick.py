@@ -1,6 +1,4 @@
 """Methods for finding PSTH peaks of unknown timecourse"""
-from __future__ import absolute_import
-from __future__ import division
 
 from .stats import r_utest
 import numpy as np

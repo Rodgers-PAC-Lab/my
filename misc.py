@@ -1,6 +1,4 @@
 """Catchall module within the catchall module for really one-off stuff."""
-from __future__ import print_function
-from __future__ import division
 
 import numpy as np
 import warnings
