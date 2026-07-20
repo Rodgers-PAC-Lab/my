@@ -3,8 +3,6 @@ groups. Loosely based on Efron 1983.
 """
 from __future__ import print_function
 from __future__ import division
-from builtins import range
-from builtins import object
 
 import numpy as np
 import pandas

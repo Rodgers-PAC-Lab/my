@@ -13,9 +13,6 @@ Usage:
 """
 from __future__ import print_function
 from __future__ import division
-from builtins import map
-from builtins import str
-from builtins import range
 
 import warnings
 import os

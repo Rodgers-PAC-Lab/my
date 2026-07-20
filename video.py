@@ -1,11 +1,6 @@
 """Generating or processing video, often using ffmpeg"""
 from __future__ import print_function
 from __future__ import division
-from builtins import zip
-from builtins import str
-from builtins import map
-from builtins import input
-from builtins import object
 import numpy as np
 import subprocess
 import re

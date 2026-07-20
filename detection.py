@@ -1,8 +1,6 @@
 """Stuff for Detection task"""
 from __future__ import print_function
 from __future__ import division
-from builtins import zip
-from builtins import range
 from past.utils import old_div
 import numpy as np
 import pandas
