@@ -1264,7 +1264,8 @@ def insert_level(df, func, name, level=0, sort=True):
     df.index = pandas.MultiIndex.from_frame(idx)
     
     # Sort
-    df.sort_index(inplace=True)
+    if sort:
+        df.sort_index(inplace=True)
     
     return df
 
@@ -1590,7 +1591,7 @@ def stack_df_to_series(df):
     return res
     
 def join_level_onto_index(df, to_join, join_on=None, put_joined_first=True, 
-    sort=True):
+    sort=True, validate='m:1', check_for_null=True):
     """Join the columns of `to_join` onto the index of `df`.
     
     df : DataFrame
@@ -1599,31 +1600,81 @@ def join_level_onto_index(df, to_join, join_on=None, put_joined_first=True,
         All columns in to_join will be added to the index of the result.
     join_on : IndexLabel or None
         Passed to the `on` keyword of `join`
+        Exception: If None, then join_on is set to to_join.index.names
     put_joined_first : bool
         If True, all the columns of `to_join` will be first on the
         resulting index. If False, they will be last.
     sort : bool
         If True, call sort_index() on the result
+    validate : str or None
+        Passed to join
+        I think only m:1 makes sense here, otherwise there is not a unique
+        value that can be joined onto `df`
+    check_for_null : bool
+        If True, raise ValueError if nulls exist after joining
+        This generally indicates an error, but in some cases this might be
+        intentional if null is a valid level value (in which case set
+        check_for_null to False)
     
     Returns: DataFrame
         The shape and the values are the same as `df`.
         The index will have new levels on it.
     """
+    # Form a result frame
     res = df.copy()
-    midx = df.index.to_frame().reset_index(drop=True)
-    midx = midx.join(to_join, on=join_on)
     
+    # Pull out the MultiIndex of the result frame
+    midx = df.index.to_frame().reset_index(drop=True)
+    
+    # Join that MultiIndex with `to_join`
+    if join_on is None:
+        # Using to_join's index names generally works better than None,
+        # which matches "index-to-index", which I think only works when the
+        # index is identical (and even in that case, this should still work)
+        join_on = to_join.index.names
+
+    # Figure out what columns we're joining
+    if to_join.ndim == 1:
+        # It's a series
+        join_cols = [to_join.name]
+    else:
+        # It's a DataFrame
+        join_cols = list(to_join.columns)
+    
+    # Check that it actually exists
+    if not np.isin(join_on, midx.columns).all():
+        raise ValueError(
+            f'You requested a join on {join_on}, but this list must be a '
+            f'subset of the index levels on the left: {list(midx.columns)}'
+            )
+
+    # Do the join
+    # Validating m:1 ensures we don't expand midx beyond its current size
+    midx = midx.join(to_join, on=join_on, validate=validate)
+    
+    # Optionally assert no nulls
+    if check_for_null:
+        if midx[join_cols].isnull().any().any():
+            raise ValueError(
+                f"nulls present after join. If you truly have nulls on your "
+                f"levels, then set check_for_null to False.\n"
+                f"Otherwise, validate that {to_join.index.names} "
+                f"can be renamed to `join_on` (you provided: {join_on}) "
+                f"and then matched to some subset of these levels:\n"
+                f"{list(midx.columns)}"
+                )
+
+    # Optionally reorder
     if put_joined_first:
-        if to_join.ndim == 1:
-            join_cols = [to_join.name]
-        else:
-            join_cols = list(to_join.columns)
         
+        # Put joined cols first
         other_cols = [col for col in midx.columns if col not in join_cols]
         midx = midx.loc[:, join_cols + other_cols]
     
+    # Set the result frame's index with the newly joined one
     res.index = pandas.MultiIndex.from_frame(midx)
     
+    # Sort
     if sort:
         res = res.sort_index()
     
