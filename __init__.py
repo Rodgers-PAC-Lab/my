@@ -1,6 +1,5 @@
 """This is a catchall module for the stuff that I'm working on that
 doesn't fit anywhere else."""
-from __future__ import absolute_import
 
 from . import bootstrap
 from . import misc
