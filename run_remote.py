@@ -1,5 +1,4 @@
 """Module for running code on remote server"""
-from __future__ import print_function
 import os
 import subprocess
 import spur

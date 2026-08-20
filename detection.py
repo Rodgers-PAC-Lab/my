@@ -1,9 +1,4 @@
 """Stuff for Detection task"""
-from __future__ import print_function
-from __future__ import division
-from builtins import zip
-from builtins import range
-from past.utils import old_div
 import numpy as np
 import pandas
 import my
@@ -99,7 +94,7 @@ def parse_trial_matrix(bfile):
         for command, time in zobj:
             if command == 'Trial started at:':
                 assert 'start' not in rec
-                rec['start'] = old_div(time, 1000.0)
+                rec['start'] = time / 1000.0
             elif command == 'catch trial':
                 assert 'typ' not in rec
                 rec['typ'] = 'nogo'
@@ -112,12 +107,12 @@ def parse_trial_matrix(bfile):
                 # This is only for FA
                 assert 'outcome' not in rec
                 rec['outcome'] = 'FA'
-                rec['response_time'] = old_div(time, 1000.0)
+                rec['response_time'] = time / 1000.0
             elif command == 'REWARD!!!':
                 # This is only for HIT
                 assert 'outcome' not in rec
                 rec['outcome'] = 'hit'
-                rec['response_time'] = old_div(time, 1000.0)
+                rec['response_time'] = time / 1000.0
             elif command == 'dark':
                 assert 'opto' not in rec
                 rec['opto'] = False
@@ -125,7 +120,7 @@ def parse_trial_matrix(bfile):
                 assert 'opto' not in rec
                 rec['opto'] = True
             else:
-                old_div(1,0)
+                1/0
         
         # Specify opto explicitly if not yet done (warmup?)
         if 'opto' not in rec:
@@ -177,6 +172,6 @@ def calculate_perf_metrics(trial_matrix, exclude_warmup=True):
             rec_l.append({'opto': opto, 'typ': typ, 'n_hits': n_hits,   
                 'n_tots': n_tots})
     perfdf = pandas.DataFrame.from_records(rec_l)
-    perfdf['perf'] = old_div(perfdf['n_hits'], perfdf['n_tots'])    
+    perfdf['perf'] = perfdf['n_hits'] / perfdf['n_tots']
     
     return perfdf

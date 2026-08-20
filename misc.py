@@ -1,15 +1,4 @@
 """Catchall module within the catchall module for really one-off stuff."""
-from __future__ import print_function
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import str
-from builtins import map
-from builtins import range
-from past.builtins import basestring
-from builtins import object
-from past.utils import old_div
 
 import numpy as np
 import warnings
@@ -185,7 +174,7 @@ class Spectrogrammer(object):
             # Set noverlap to default
             if noverlap is None:
                 # Try to do it with 50% overlap
-                noverlap = old_div(NFFT, 2)
+                noverlap = NFFT // 2
             
             # Calculate downsample_ratio to achieve this
             self.downsample_ratio = \
@@ -204,7 +193,7 @@ class Spectrogrammer(object):
     
         # Default value for noverlap if still None
         if noverlap is None:
-            noverlap = old_div(NFFT, 2)
+            noverlap = NFFT // 2
         self.noverlap = noverlap
         
         # store other defaults
@@ -340,7 +329,7 @@ def pickle_dump(obj, filename):
 
 def invert_linear_poly(p):
     """Helper function for inverting fit.coeffs"""
-    return old_div(np.array([1, -p[1]]).astype(float), p[0])
+    return np.array([1, -p[1]]).astype(float) / p[0]
 
 def apply_and_filter_by_regex(pattern, list_of_strings, sort=True):
     """Apply regex pattern to each string and return result.
@@ -512,7 +501,7 @@ def parse_by_block(lb_counts, pb_counts, lb_trial_numbers, pb_trial_numbers,
             # Convert to beginning of first LBPB with any trials
             # The first block might be quite short
             # Change the final +1 to +161 to start at the first full block
-            start_trial = (old_div((first_trial - 1), 160)) * 160 + 1
+            start_trial = ((first_trial - 1) // 160) * 160 + 1
     
     # Arrayify
     lb_counts = np.asarray(lb_counts)
@@ -639,9 +628,9 @@ def yoked_zscore(list_of_arrays, axis=1):
     res = []
     for arr in list_of_arrays:
         if axis == 1:
-            res.append(old_div((arr - means[:, None]), stdevs[:, None]))
+            res.append((arr - means[:, None]) / stdevs[:, None])
         elif axis == 0:
-            res.append(old_div((arr - means[None, :]), stdevs[None, :]))
+            res.append((arr - means[None, :]) / stdevs[None, :])
         else:
             raise ValueError("axis must be 0 or 1")
     return res
@@ -678,7 +667,7 @@ def gaussian_smooth(signal, gstd=100, glen=None, axis=1, **filtfilt_kwargs):
     
     # Incantation such that b[0] == 1.0
     b = scipy.signal.gaussian(glen * 2, gstd, sym=False)[glen:]
-    b = old_div(b, b.sum())
+    b = b / b.sum()
     
     # Smooth
     if signal.ndim == 1:
@@ -781,7 +770,7 @@ def binned_pair2cxy(binned0, binned1, Fs=1000., NFFT=256, noverlap=None,
     """
     # Set up psd_kwargs
     if noverlap is None:
-        noverlap = old_div(NFFT, 2)
+        noverlap = NFFT // 2
     psd_kwargs = {'Fs': Fs, 'NFFT': NFFT, 'noverlap': noverlap, 
         'detrend': detrend, 'window': windw}
 
@@ -801,7 +790,7 @@ def binned_pair2cxy(binned0, binned1, Fs=1000., NFFT=256, noverlap=None,
         S12 = S12.mean(0)
         S1 = S1.mean(0)
         S2 = S2.mean(0)
-    Cxy = old_div(S12, np.sqrt(S1 * S2))
+    Cxy = S12 / np.sqrt(S1 * S2)
     
     # Truncate unnecessary frequencies
     if freq_high:
@@ -823,7 +812,7 @@ def binned2pxx(binned, Fs=1000., NFFT=256, noverlap=None,
     """
     # Set up psd_kwargs
     if noverlap is None:
-        noverlap = old_div(NFFT, 2)
+        noverlap = NFFT // 2
     psd_kwargs = {'Fs': Fs, 'NFFT': NFFT, 'noverlap': noverlap, 
         'detrend': detrend, 'window': windw}    
     
@@ -848,7 +837,7 @@ def sem(data, axis=None):
     else:
         N = np.asarray(data).shape[axis]
     
-    return old_div(np.std(np.asarray(data), axis), np.sqrt(N))
+    return np.std(np.asarray(data), axis) / np.sqrt(N)
 
 def take_equally_spaced(arr, n):
     """Take n equally spaced elements from arr
@@ -858,10 +847,10 @@ def take_equally_spaced(arr, n):
     """
     # e.g., we want 2 equally spaced, so they are at 1/3 and 2/3
     arr = np.asarray(arr)
-    first_element_relative = old_div(1.0, (n + 1))
+    first_element_relative = 1.0 / (n + 1)
     relative_pos = np.linspace(
         first_element_relative, 1 - first_element_relative, n)
-    absolute_pos = my.rint((len(arr) - 1) * relative_pos)
+    absolute_pos = np.rint((len(arr) - 1) * relative_pos).astype(int)
     return arr[absolute_pos]
 
 def define_integer_bin_edges(start, stop, n_bins=None, binwidth=None,
@@ -1268,7 +1257,8 @@ def insert_level(df, func, name, level=0, sort=True):
     df.index = pandas.MultiIndex.from_frame(idx)
     
     # Sort
-    df.sort_index(inplace=True)
+    if sort:
+        df.sort_index(inplace=True)
     
     return df
 
@@ -1335,7 +1325,6 @@ def slice_df_by_some_levels(df, slicing_midx, drop=False):
         if level not in slicing_levels]
     
     # Error check
-    # Cedric - replaced in1d with isin as in1d is deprecated
     if not np.isin(slicing_midx.names, df.index.names).all():
         raise ValueError("cannot slice on missing levels")
     
@@ -1595,7 +1584,7 @@ def stack_df_to_series(df):
     return res
     
 def join_level_onto_index(df, to_join, join_on=None, put_joined_first=True, 
-    sort=True):
+    sort=True, validate='m:1', check_for_null=True):
     """Join the columns of `to_join` onto the index of `df`.
     
     df : DataFrame
@@ -1604,31 +1593,81 @@ def join_level_onto_index(df, to_join, join_on=None, put_joined_first=True,
         All columns in to_join will be added to the index of the result.
     join_on : IndexLabel or None
         Passed to the `on` keyword of `join`
+        Exception: If None, then join_on is set to to_join.index.names
     put_joined_first : bool
         If True, all the columns of `to_join` will be first on the
         resulting index. If False, they will be last.
     sort : bool
         If True, call sort_index() on the result
+    validate : str or None
+        Passed to join
+        I think only m:1 makes sense here, otherwise there is not a unique
+        value that can be joined onto `df`
+    check_for_null : bool
+        If True, raise ValueError if nulls exist after joining
+        This generally indicates an error, but in some cases this might be
+        intentional if null is a valid level value (in which case set
+        check_for_null to False)
     
     Returns: DataFrame
         The shape and the values are the same as `df`.
         The index will have new levels on it.
     """
+    # Form a result frame
     res = df.copy()
-    midx = df.index.to_frame().reset_index(drop=True)
-    midx = midx.join(to_join, on=join_on)
     
+    # Pull out the MultiIndex of the result frame
+    midx = df.index.to_frame().reset_index(drop=True)
+    
+    # Join that MultiIndex with `to_join`
+    if join_on is None:
+        # Using to_join's index names generally works better than None,
+        # which matches "index-to-index", which I think only works when the
+        # index is identical (and even in that case, this should still work)
+        join_on = to_join.index.names
+
+    # Figure out what columns we're joining
+    if to_join.ndim == 1:
+        # It's a series
+        join_cols = [to_join.name]
+    else:
+        # It's a DataFrame
+        join_cols = list(to_join.columns)
+    
+    # Check that it actually exists
+    if not np.isin(join_on, midx.columns).all():
+        raise ValueError(
+            f'You requested a join on {join_on}, but this list must be a '
+            f'subset of the index levels on the left: {list(midx.columns)}'
+            )
+
+    # Do the join
+    # Validating m:1 ensures we don't expand midx beyond its current size
+    midx = midx.join(to_join, on=join_on, validate=validate)
+    
+    # Optionally assert no nulls
+    if check_for_null:
+        if midx[join_cols].isnull().any().any():
+            raise ValueError(
+                f"nulls present after join. If you truly have nulls on your "
+                f"levels, then set check_for_null to False.\n"
+                f"Otherwise, validate that {to_join.index.names} "
+                f"can be renamed to `join_on` (you provided: {join_on}) "
+                f"and then matched to some subset of these levels:\n"
+                f"{list(midx.columns)}"
+                )
+
+    # Optionally reorder
     if put_joined_first:
-        if to_join.ndim == 1:
-            join_cols = [to_join.name]
-        else:
-            join_cols = list(to_join.columns)
         
+        # Put joined cols first
         other_cols = [col for col in midx.columns if col not in join_cols]
         midx = midx.loc[:, join_cols + other_cols]
     
+    # Set the result frame's index with the newly joined one
     res.index = pandas.MultiIndex.from_frame(midx)
     
+    # Sort
     if sort:
         res = res.sort_index()
     

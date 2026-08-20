@@ -1,4 +1,3 @@
-from builtins import range
 import scipy.spatial
 import numpy as np
 from matplotlib import mlab
